@@ -617,6 +617,7 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 	task->pa_base = dma_handle;
 	task->thread = thread;
 	task->pkt = pkt;
+	task->exec_time = sched_clock();
 
 	if (list_empty(&thread->task_busy_list)) {
 		WARN_ON(cmdq_clk_enable(cmdq) < 0);
@@ -659,6 +660,7 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		if (thread->timeout_ms != CMDQ_NO_TIMEOUT) {
 			mod_timer(&thread->timeout, jiffies +
 				msecs_to_jiffies(thread->timeout_ms));
+			thread->timer_mod = sched_clock();
 		}
 		list_move_tail(&task->list_entry, &thread->task_busy_list);
 	} else {
@@ -701,10 +703,17 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 			cmdq_thread_resume(thread);
 		}
 	}
+
+#if IS_ENABLED(CONFIG_MTK_CMDQ_MBOX_EXT)
+	pkt->rec_trigger = sched_clock();
+#endif
 }
 
 static void cmdq_task_exec_done(struct cmdq_task *task, s32 err)
 {
+#if IS_ENABLED(CONFIG_MTK_CMDQ_MBOX_EXT)
+	task->pkt->rec_irq = sched_clock();
+#endif
 	cmdq_task_callback(task->pkt, err);
 	cmdq_log("pkt:0x%p done err:%d", task->pkt, err);
 	list_del_init(&task->list_entry);
@@ -801,6 +810,10 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 		cmdq_log("task loop %p", &task->pkt);
 		cmdq_task_callback(task->pkt, err);
 
+#if IS_ENABLED(CONFIG_MTK_CMDQ_MBOX_EXT)
+		task->pkt->rec_irq = sched_clock();
+#endif
+
 #if IS_ENABLED(CMDQ_MMPROFILE_SUPPORT)
 		mmprofile_log_ex(cmdq_mmp.loop_irq, MMPROFILE_FLAG_PULSE,
 			MMP_THD(thread, cmdq), (unsigned long)task->pkt);
@@ -857,6 +870,7 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 	} else {
 		mod_timer(&thread->timeout, jiffies +
 			msecs_to_jiffies(thread->timeout_ms));
+		thread->timer_mod = sched_clock();
 		cmdq_log("mod_timer pkt:0x%p timeout:%u thread:%u",
 			task->pkt, thread->timeout_ms, thread->idx);
 	}
@@ -914,7 +928,24 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 static bool cmdq_thread_timeout_excceed(struct cmdq_thread *thread)
 {
 	struct cmdq *cmdq = container_of(thread->chan->mbox, struct cmdq, mbox);
-	return false;
+	u64 duration;
+
+	/* If first time exec time stamp smaller than timeout value,
+	 * it is last round timeout. Skip it.
+	 */
+	duration = div_s64(sched_clock() - thread->timer_mod, 1000000);
+	if (duration < thread->timeout_ms) {
+		mod_timer(&thread->timeout, jiffies +
+			msecs_to_jiffies(thread->timeout_ms - duration));
+		thread->timer_mod = sched_clock();
+		cmdq_msg(
+			"thread:%u usage:%d mod time:%llu dur:%llu timeout not excceed",
+			thread->idx, atomic_read(&cmdq->usage),
+			thread->timer_mod, duration);
+		return false;
+	}
+
+	return true;
 }
 
 static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
@@ -1018,6 +1049,7 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 	if (task) {
 		mod_timer(&thread->timeout, jiffies +
 			msecs_to_jiffies(thread->timeout_ms));
+		thread->timer_mod = sched_clock();
 		cmdq_thread_err_reset(cmdq, thread,
 			task->pa_base, thread->priority);
 		cmdq_thread_resume(thread);
@@ -1361,6 +1393,7 @@ void cmdq_mbox_thread_remove_task(struct mbox_chan *chan,
 		cmdq_thread_set_pc(thread, task->pa_base);
 		mod_timer(&thread->timeout, jiffies +
 			msecs_to_jiffies(thread->timeout_ms));
+		thread->timer_mod = sched_clock();
 	}
 
 	if (last_task) {
