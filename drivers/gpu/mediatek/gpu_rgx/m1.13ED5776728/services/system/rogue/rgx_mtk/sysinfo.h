@@ -55,7 +55,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /*
 #define MTK_LOGE(fmt, args...) pr_no_err(MTKPVR_TAG"[ERROR]"fmt, ##args)
 #define MTK_LOGW(fmt, args...) pr_debug(MTKPVR_TAG"[WARNING]"fmt, ##args)
-#define MTK_LOGI(fmt, args...) pr_info(MTKPVR_TAG"[INFO]"fmt, ##args)
+#define MTK_LOGI(fmt, args...) pr_debug(MTKPVR_TAG"[INFO]"fmt, ##args)
 #define MTK_LOGD(fmt, args...) pr_debug(MTKPVR_TAG"[DEBUG]"fmt, ##args)
 */
 #define MTK_LOGE(fmt, args...) do {} while(0)
