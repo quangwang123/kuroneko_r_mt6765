@@ -12,8 +12,8 @@
 #include <linux/trace_events.h>
 
 #if !IS_ENABLED(CONFIG_MTK_CMDQ_MBOX_EXT)
-#define cmdq_util_msg(f, args...) do {} while (0)
-#define cmdq_util_err(f, args...) do {} while (0)
+#define cmdq_util_msg(f, args...) cmdq_msg(f, ##args)
+#define cmdq_util_err(f, args...) cmdq_dump(f, ##args)
 #endif
 
 /* see also gce platform binding header */
@@ -156,7 +156,12 @@ struct cmdq_thread {
 };
 
 extern int mtk_cmdq_log;
-#define cmdq_log(fmt, args...) do {} while (0)
+#define cmdq_log(fmt, args...) \
+do { \
+	if (mtk_cmdq_log) \
+		pr_notice("[cmdq] "fmt" @%s,%u\n", \
+		##args, __func__, __LINE__); \
+} while (0)
 
 
 /* MTK only functions */
