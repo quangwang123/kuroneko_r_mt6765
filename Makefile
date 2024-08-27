@@ -455,7 +455,7 @@ KBUILD_AFLAGS_MODULE  := -DMODULE
 KBUILD_CFLAGS_MODULE  := -DMODULE
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 KBUILD_LDFLAGS := -O3 -mcpu=cortex-a53+crc -mtune=cortex-a53
-KBUILD_CFLAGS := -mcpu=cortex-a53+crc -mtune=cortex-a53 -fdata-sections -ffunction-sections -fno-exceptions -fno-rtti -ggdb -Wno-address-of-packed-member -fmerge-all-constants
+KBUILD_CFLAGS := -mcpu=cortex-a53+crc -mtune=cortex-a53 -fdata-sections -ffunction-sections -fno-exceptions -ggdb -Wno-address-of-packed-member -fmerge-all-constants
 GCC_PLUGINS_CFLAGS :=
 CLANG_FLAGS :=
 
@@ -707,23 +707,10 @@ endif
 ifeq ($(cc-name),clang)
 #Enable fast FMA optimizations
 KBUILD_CFLAGS   += -ffp-contract=fast
-endif
 
-ifeq ($(cc-name),clang)
-KBUILD_CFLAGS	+= -mllvm -inline-threshold=2500
-KBUILD_CFLAGS	+= -mllvm -inlinehint-threshold=2000
-KBUILD_CFLAGS   += -mllvm -inlinehint-threshold=1200
-else ifeq ($(cc-name),gcc)
-KBUILD_CFLAGS	+= --param max-inline-insns-auto=500
-
-# We limit inlining to 5KB on the stack.
-KBUILD_CFLAGS	+= --param large-stack-frame=1288
-
-KBUILD_CFLAGS	+= --param inline-min-speedup=5
-KBUILD_CFLAGS	+= --param inline-unit-growth=60
-endif
 # Enable hot cold split optimization
 KBUILD_CFLAGS   += -mllvm -hot-cold-split=true
+endif
 ifeq ($(cc-name),clang)
 # Additional optimizations for better kernel speed
 KBUILD_CFLAGS +=  -fno-semantic-interposition -fno-signed-zeros  -ffinite-math-only -freciprocal-math -fcf-protection=none -fno-trapping-math -fno-math-errno -ffast-math -funroll-loops
@@ -788,15 +775,26 @@ ifeq ($(cc-name),clang)
 KBUILD_CFLAGS	+= -mllvm -inline-threshold=1
 KBUILD_CFLAGS	+= -mllvm -inlinehint-threshold=1
 KBUILD_CFLAGS   += -mllvm -unroll-threshold=1
+KBUILD_CFLAGS  += -mllvm -inline-savings-multiplier=18
+KBUILD_CFLAGS  += -mllvm -inline-cold-callsite-threshold=65
+KBUILD_CFLAGS  += -mllvm -ignore-tti-inline-compatible
+KBUILD_CFLAGS  += -mllvm -inline-size-allowance=30
+KBUILD_CFLAGS  += -mllvm -inlinecold-threshold=160
+KBUILD_CFLAGS  += -mllvm -locally-hot-callsite-threshold=1050
+KBUILD_CFLAGS  += -mllvm -inline-instr-cost=26
+KBUILD_CFLAGS  += -mllvm -inline-call-penalty=8
+KBUILD_CFLAGS  += -mllvm -hot-callsite-rel-freq=130
+KBUILD_CFLAGS  += -mllvm -cold-callsite-rel-freq=6
+KBUILD_CFLAGS  += -mllvm -inline-enable-cost-benefit-analysis
 else ifeq ($(cc-name),gcc)
 KBUILD_CFLAGS	+= --param max-inline-insns-single=1
 KBUILD_CFLAGS	+= --param max-inline-insns-auto=1
 
 # We limit inlining to 5KB on the stack.
-KBUILD_CFLAGS	+= --param large-stack-frame=1288
+KBUILD_CFLAGS	+= --param large-stack-frame=1
 
-KBUILD_CFLAGS	+= --param inline-min-speedup=5
-KBUILD_CFLAGS	+= --param inline-unit-growth=60
+KBUILD_CFLAGS	+= --param inline-min-speedup=1
+KBUILD_CFLAGS	+= --param inline-unit-growth=1
 endif
 
 ifneq ($(CONFIG_FRAME_WARN),0)
@@ -930,8 +928,6 @@ LD_FLAGS_LTO_CLANG := -mllvm -import-instr-limit=1
 
 KBUILD_LDFLAGS += $(LD_FLAGS_LTO_CLANG)
 KBUILD_LDFLAGS_MODULE += $(LD_FLAGS_LTO_CLANG)
-
-lto-clang-flags += -fsplit-machine-functions
 
 KBUILD_LDFLAGS_MODULE += -T scripts/module-lto.lds
 
