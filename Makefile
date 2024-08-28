@@ -781,7 +781,7 @@ KBUILD_CFLAGS  += -mllvm -ignore-tti-inline-compatible
 KBUILD_CFLAGS  += -mllvm -inline-size-allowance=30
 KBUILD_CFLAGS  += -mllvm -inlinecold-threshold=160
 KBUILD_CFLAGS  += -mllvm -locally-hot-callsite-threshold=1050
-KBUILD_CFLAGS  += -mllvm -inline-instr-cost=26
+KBUILD_CFLAGS  += -mllvm -inline-instr-cost=8
 KBUILD_CFLAGS  += -mllvm -inline-call-penalty=8
 KBUILD_CFLAGS  += -mllvm -hot-callsite-rel-freq=130
 KBUILD_CFLAGS  += -mllvm -cold-callsite-rel-freq=6
