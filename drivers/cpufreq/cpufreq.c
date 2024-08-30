@@ -31,6 +31,10 @@
 #include <linux/syscore_ops.h>
 #include <linux/tick.h>
 #include <trace/events/power.h>
+#include <linux/cpu_suspend.h>
+
+#define LL_FREQ 300000
+#define L_FREQ 400000
 
 static LIST_HEAD(cpufreq_policy_list);
 
@@ -1974,6 +1978,9 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
 {
 	unsigned int old_target_freq = target_freq;
 	int index;
+	cpumask_t big_cpus;
+	cpumask_clear(&big_cpus); // Clear the mask
+	cpumask_set_cpu(4, &big_cpus); // Set CPU 4
 
 	if (cpufreq_disabled())
 		return -ENODEV;
@@ -1992,6 +1999,15 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
 	 */
 	if (target_freq == policy->cur)
 		return 0;
+
+	if (screen_off) {
+		// Check if the current CPU belongs to the forced CPU mask
+		if (cpumask_test_cpu(policy->cpu, &big_cpus)) {
+			target_freq == L_FREQ;
+		} else {
+			target_freq == LL_FREQ;
+		}
+	}
 
 	/* Save last value to restore later on errors */
 	policy->restore_freq = policy->cur;

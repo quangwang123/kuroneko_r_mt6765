@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/pm_wakeup.h>
+#include <linux/cpu_suspend.h>
 
 #include "disp_drv_platform.h"
 #ifdef MTK_FB_ION_SUPPORT
@@ -4618,6 +4619,7 @@ int primary_display_suspend(void)
 	for_each_present_cpu(cpu)
 		if ((cpu != 0) && (cpu != 4) && cpu_online(cpu))
 				cpu_down(cpu);
+	screen_off = true;
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
 #ifdef CONFIG_MTK_HIGH_FRAME_RATE
@@ -5070,6 +5072,7 @@ int primary_display_resume(void)
 				for_each_present_cpu(cpu)
 					if ((cpu != 0) && (cpu != 4) && !cpu_online(cpu))
 						cpu_up(cpu);
+				screen_off = false;
 			}
 			primary_display_set_lcm_power_state_nolock(
 				LCM_ON_LOW_POWER);
@@ -5083,6 +5086,7 @@ int primary_display_resume(void)
 				for_each_present_cpu(cpu)
 					if ((cpu != 0) && (cpu != 4) && !cpu_online(cpu))
 						cpu_up(cpu);
+				screen_off = false;
 			} else {
 				disp_lcm_aod(pgc->plcm, 0);
 				skip_update = 1;
