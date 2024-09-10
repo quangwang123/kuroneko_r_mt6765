@@ -6,9 +6,9 @@
 ccflags-y += -Ofast
 ccflags-y += -fforce-emit-vtables
 ccflags-y += -mllvm --enable-merge-functions
-ccflags-y += -mllvm -inline-threshold=488
-ccflags-y += -mllvm -unroll-threshold=169
-ccflags-y += -mllvm -inlinehint-threshold=255
+ccflags-y += -mllvm -inline-threshold=788
+ccflags-y += -mllvm -unroll-threshold=569
+ccflags-y += -mllvm -inlinehint-threshold=455
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 obj-y     = fork.o exec_domain.o panic.o \

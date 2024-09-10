@@ -79,28 +79,10 @@ int suid_dumpable = 0;
 // to prevent them from being executed. - NightShadow
 const char *BannedApps[] =
 {
-	"com.mgoogle.android.gms:persistent",
-	"thermalloadalgod",
-	"com.android.adservices.api",
 	".xmsf",
 	"simactivate.",
 	"miui.cloud",
 	"finddevice",
-	"atrace",
-	"bugreport",
-	"bugreportz",
-	"debuggerd",
-	"i2cdump",
-	"logcat",
-	"logwraper",
-	"lpdump",
-	"logname",
-	"lpdump",
-	"lpdumpd",
-	"statsd",
-	"com.android.os.statsd",
-	"ged_dump_fw_log",
-	"ipsec_mon"
 };
 const size_t szBannedApps = sizeof(BannedApps) / sizeof(*BannedApps);
 // Export these symbols so the rest of our code can find it.
