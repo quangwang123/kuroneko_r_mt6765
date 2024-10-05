@@ -9197,7 +9197,7 @@ asym_packing:
 			return true;
 	}
 
-	return false;
+	return true;
 }
 
 #ifdef CONFIG_NUMA_BALANCING
